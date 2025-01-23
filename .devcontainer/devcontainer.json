@@ -1,18 +1,18 @@
 {
-  "name": "R Development with Full Tools",
+  "name": "R Development Environment",
   "build": {
     "dockerfile": "Dockerfile"
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "Ikuyadeu.r",               // R language support
-        "REditorSupport.r-lsp"      // R language server
+        "Ikuyadeu.r",               // R language extension
+        "REditorSupport.r-lsp"      // R language server support
       ]
     }
   },
   "settings": {
-    "terminal.integrated.defaultProfile.linux": "bash" // Use Bash for terminal commands
+    "terminal.integrated.defaultProfile.linux": "bash" // Ensure the terminal uses bash
   },
   "postCreateCommand": "Rscript .devcontainer/setup.R"
 }
