@@ -1,0 +1,12 @@
+{
+  "name": "R Development Environment",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "postCreateCommand": "Rscript setup.R",
+  "customizations": {
+    "vscode": {
+      "extensions": ["Ikuyadeu.r", "REditorSupport.r-lsp"]
+    }
+  }
+}
