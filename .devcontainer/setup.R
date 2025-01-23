@@ -2,7 +2,8 @@ if (!requireNamespace("BiocManager", quietly = TRUE)) {
   install.packages("BiocManager")
 }
 
+# Install required R packages
 BiocManager::install(c("sangerseqR", "Biostrings"))
 
-# Install other packages as needed
-install.packages(c("tidyverse"))
+# Add any other R packages you need
+install.packages(c("tidyverse", "ggplot2"))
