@@ -41,18 +41,31 @@ if (file.exists("blast_results.txt") && file.info("blast_results.txt")$size > 0)
   blast_hits <- read.table("blast_results.txt", header = FALSE)
   colnames(blast_hits) <- c("qstart", "qend", "sstart", "send")
 
-  # Determine vector trimming positions
-  vector_start <- min(blast_hits$qstart)
-  vector_end <- max(blast_hits$qend)
+  # Ensure BLAST results are valid
+  if (nrow(blast_hits) > 0) {
+    vector_start <- min(blast_hits$qstart)
+    vector_end <- max(blast_hits$qend)
 
-  # Step 4: Trim Vector Portions
-  cat("Trimming vector portions...\n")
-  trimmed_sequence <- subseq(raw_sequence, start = vector_end + 1, end = vector_start - 1)
-  cat("Trimmed sequence:\n", as.character(trimmed_sequence), "\n")
+    # Ensure trimming coordinates are within sequence range
+    seq_length <- nchar(raw_sequence)
+    vector_start <- max(1, vector_start)   # Ensure 'start' is at least 1
+    vector_end <- min(seq_length, vector_end) # Ensure 'end' does not exceed sequence length
 
-  # Save the trimmed sequence as FASTA
-  writeXStringSet(DNAStringSet(trimmed_sequence), "final_trimmed_sequence.fasta")
-  cat("Final trimmed sequence saved as 'final_trimmed_sequence.fasta'\n")
+    if (vector_end < vector_start) {
+      stop("Error: BLAST trimming coordinates are invalid (vector_end < vector_start).")
+    }
+
+    # Step 4: Trim Vector Portions
+    cat("Trimming vector portions...\n")
+    trimmed_sequence <- subseq(raw_sequence, start = vector_end + 1, end = vector_start - 1)
+    cat("Trimmed sequence:\n", as.character(trimmed_sequence), "\n")
+
+    # Save the trimmed sequence as FASTA
+    writeXStringSet(DNAStringSet(trimmed_sequence), "final_trimmed_sequence.fasta")
+    cat("Final trimmed sequence saved as 'final_trimmed_sequence.fasta'\n")
+  } else {
+    stop("Error: No valid BLAST hits found.")
+  }
 } else {
   cat("No BLAST hits found. Saving raw sequence as 'final_trimmed_sequence.fasta'...\n")
   writeXStringSet(DNAStringSet(raw_sequence), "final_trimmed_sequence.fasta")
