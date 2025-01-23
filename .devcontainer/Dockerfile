@@ -1,15 +1,15 @@
-# Use a comprehensive R development image
+# Use a comprehensive R image that includes RStudio
 FROM rocker/rstudio:4.3.0
 
-# Install additional system dependencies, including zlib development library
+# Install additional system dependencies
 RUN apt-get update && apt-get install -y \
     ncbi-blast+ \
+    zlib1g-dev \       # Required for R package dependencies
     wget \
     git \
-    zlib1g-dev \  # Add this to install zlib development library
     && rm -rf /var/lib/apt/lists/*
 
-# Install required R packages
+# Install R libraries using BiocManager
 RUN Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager'); BiocManager::install(c('sangerseqR', 'Biostrings'))"
 
 # Set working directory
