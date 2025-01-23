@@ -1,0 +1,44 @@
+# Load Required Libraries
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install(c("sangerseqR", "Biostrings"))
+
+library(sangerseqR)
+library(Biostrings)
+
+# Step 1: Read the AB1 File
+# Replace 'your_file.ab1' with the actual file name
+ab1_file <- "your_file.ab1"
+sanger_data <- read.abif(ab1_file)
+sanger_seq <- sangerseq(sanger_data)
+
+# Step 2: Visualize the Chromatogram
+# Generates a chromatogram plot for visual inspection
+chromatogram(sanger_seq, trim5 = 50, trim3 = 50)
+
+# Step 3: Base Calling
+# Extract the primary sequence
+sequence <- primarySeq(sanger_seq)
+cat("Raw Sequence:\n", as.character(sequence), "\n\n")
+
+# Step 4: Trim Vector Sequence
+# Replace with the actual vector sequence
+vector_sequence <- "AGCTAGCTAGCTA"
+sanger_dna <- DNAString(as.character(sequence))
+vector_dna <- DNAString(vector_sequence)
+trimmed_sanger <- subseq(sanger_dna, start = length(vector_dna) + 1, end = nchar(sanger_dna))
+cat("Trimmed Sequence:\n", as.character(trimmed_sanger), "\n\n")
+
+# Step 5: Quality-Based Trimming
+# Extract quality scores and define threshold
+quality_scores <- quality(sanger_seq)
+threshold <- 20
+trim_start <- which(quality_scores > threshold)[1]
+trim_end <- which(quality_scores > threshold)[length(which(quality_scores > threshold))]
+trimmed_quality_sequence <- subseq(sanger_dna, start = trim_start, end = trim_end)
+cat("Quality-Trimmed Sequence:\n", as.character(trimmed_quality_sequence), "\n\n")
+
+# Step 6: Save the Final Trimmed Sequence to a FASTA File
+writeXStringSet(DNAStringSet(trimmed_quality_sequence), "trimmed_sequence.fasta")
+cat("Trimmed sequence saved to 'trimmed_sequence.fasta'\n")
