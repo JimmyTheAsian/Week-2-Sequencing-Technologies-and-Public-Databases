@@ -1,18 +1,18 @@
 {
-  "name": "R and BLAST Development Environment",
+  "name": "R Development with Full Tools",
   "build": {
     "dockerfile": "Dockerfile"
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "Ikuyadeu.r",
-        "REditorSupport.r-lsp"
+        "Ikuyadeu.r",               // R language support
+        "REditorSupport.r-lsp"      // R language server
       ]
     }
   },
-  "postCreateCommand": "Rscript .devcontainer/setup.R",
   "settings": {
-    "terminal.integrated.defaultProfile.linux": "/bin/bash"
-  }
+    "terminal.integrated.defaultProfile.linux": "bash" // Use Bash for terminal commands
+  },
+  "postCreateCommand": "Rscript .devcontainer/setup.R"
 }
