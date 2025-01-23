@@ -1,4 +1,4 @@
-# Load Required Libraries
+# Load required libraries
 if (!requireNamespace("BiocManager", quietly = TRUE)) {
   install.packages("BiocManager")
 }
@@ -7,38 +7,64 @@ BiocManager::install(c("sangerseqR", "Biostrings"))
 library(sangerseqR)
 library(Biostrings)
 
+# Define constants
+ab1_file <- "your_file.ab1"         # Replace with your actual AB1 file path
+vector_fasta <- "pGEM-T.fasta"      # Replace with the FASTA file of the pGEM-T vector
+quality_threshold <- 20            # Define a quality threshold for trimming
+
 # Step 1: Read the AB1 File
-# Replace 'your_file.ab1' with the actual file name
-ab1_file <- "your_file.ab1"
+cat("Reading AB1 file...\n")
 sanger_data <- read.abif(ab1_file)
 sanger_seq <- sangerseq(sanger_data)
 
-# Step 2: Visualize the Chromatogram
-# Generates a chromatogram plot for visual inspection
-chromatogram(sanger_seq, trim5 = 50, trim3 = 50)
-
-# Step 3: Base Calling
-# Extract the primary sequence
-sequence <- primarySeq(sanger_seq)
-cat("Raw Sequence:\n", as.character(sequence), "\n\n")
-
-# Step 4: Trim Vector Sequence
-# Replace with the actual vector sequence
-vector_sequence <- "AGCTAGCTAGCTA"
-sanger_dna <- DNAString(as.character(sequence))
-vector_dna <- DNAString(vector_sequence)
-trimmed_sanger <- subseq(sanger_dna, start = length(vector_dna) + 1, end = nchar(sanger_dna))
-cat("Trimmed Sequence:\n", as.character(trimmed_sanger), "\n\n")
-
-# Step 5: Quality-Based Trimming
-# Extract quality scores and define threshold
+# Extract the sequence and quality scores
+raw_sequence <- primarySeq(sanger_seq)
 quality_scores <- quality(sanger_seq)
-threshold <- 20
-trim_start <- which(quality_scores > threshold)[1]
-trim_end <- which(quality_scores > threshold)[length(which(quality_scores > threshold))]
-trimmed_quality_sequence <- subseq(sanger_dna, start = trim_start, end = trim_end)
-cat("Quality-Trimmed Sequence:\n", as.character(trimmed_quality_sequence), "\n\n")
 
-# Step 6: Save the Final Trimmed Sequence to a FASTA File
-writeXStringSet(DNAStringSet(trimmed_quality_sequence), "trimmed_sequence.fasta")
-cat("Trimmed sequence saved to 'trimmed_sequence.fasta'\n")
+# Step 2: Trim Low-Quality Ends
+cat("Trimming low-quality ends...\n")
+trim_start <- which(quality_scores > quality_threshold)[1]
+trim_end <- which(quality_scores > quality_threshold)[length(which(quality_scores > quality_threshold))]
+
+quality_trimmed_sequence <- subseq(DNAString(as.character(raw_sequence)), start = trim_start, end = trim_end)
+
+cat("Quality-trimmed sequence:\n", as.character(quality_trimmed_sequence), "\n\n")
+
+# Step 3: BLAST Against the Vector
+cat("Performing BLAST alignment against vector...\n")
+
+# Save the quality-trimmed sequence as a FASTA file
+writeXStringSet(DNAStringSet(quality_trimmed_sequence), "trimmed_sequence.fasta")
+
+# Create a BLAST database for the vector
+system(paste("makeblastdb -in", vector_fasta, "-dbtype nucl -out vector_db"), intern = TRUE)
+
+# Run BLAST
+blast_results <- system(paste(
+  "blastn -query trimmed_sequence.fasta -db vector_db -out blast_results.txt -outfmt '6 qstart qend sstart send'",
+  sep = " "
+), intern = TRUE)
+
+# Parse BLAST results
+cat("Parsing BLAST results...\n")
+blast_hits <- read.table("blast_results.txt", header = FALSE)
+colnames(blast_hits) <- c("qstart", "qend", "sstart", "send")
+
+# Determine vector trimming positions
+vector_start <- min(blast_hits$qstart)
+vector_end <- max(blast_hits$qend)
+
+# Step 4: Trim Vector Portions
+cat("Trimming vector portions...\n")
+final_trimmed_sequence <- subseq(quality_trimmed_sequence, start = vector_end + 1, end = vector_start - 1)
+
+cat("Final trimmed sequence:\n", as.character(final_trimmed_sequence), "\n\n")
+
+# Step 5: Plot Chromatogram for the Final Trimmed Sequence
+cat("Plotting chromatogram...\n")
+trimmed_chromatogram <- sangerseq(sanger_data, trim5 = trim_start, trim3 = length(raw_sequence) - trim_end)
+chromatogram(trimmed_chromatogram)
+
+# Step 6: Save Final Sequence
+writeXStringSet(DNAStringSet(final_trimmed_sequence), "final_trimmed_sequence.fasta")
+cat("Final trimmed sequence saved as 'final_trimmed_sequence.fasta'\n")
