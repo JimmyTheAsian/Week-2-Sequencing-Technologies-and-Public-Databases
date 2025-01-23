@@ -19,11 +19,11 @@ sanger_seq <- sangerseq(sanger_data)
 # Extract the primary sequence (raw base calls from the chromatogram)
 raw_sequence <- primarySeq(sanger_seq)
 
-# Step 2: Save the Sequence as FASTA
+# Save the raw sequence as a FASTA file for BLAST
 cat("Saving raw sequence to FASTA...\n")
 writeXStringSet(DNAStringSet(raw_sequence), "raw_sequence.fasta")
 
-# Step 3: BLAST Against the Vector
+# Step 2: BLAST Against the Vector
 cat("Performing BLAST alignment against vector...\n")
 
 # Create a BLAST database for the vector
@@ -35,7 +35,7 @@ system(paste(
   sep = " "
 ), intern = TRUE)
 
-# Parse BLAST results
+# Step 3: Parse BLAST Results
 cat("Parsing BLAST results...\n")
 if (file.exists("blast_results.txt") && file.info("blast_results.txt")$size > 0) {
   blast_hits <- read.table("blast_results.txt", header = FALSE)
@@ -46,16 +46,25 @@ if (file.exists("blast_results.txt") && file.info("blast_results.txt")$size > 0)
     vector_start <- min(blast_hits$qstart)
     vector_end <- max(blast_hits$qend)
 
-    # Ensure trimming coordinates are within sequence range
+    # Step 4: Validate Trimming Coordinates
     seq_length <- nchar(raw_sequence)
-    vector_start <- max(1, vector_start)   # Ensure 'start' is at least 1
-    vector_end <- min(seq_length, vector_end) # Ensure 'end' does not exceed sequence length
 
-    if (vector_end < vector_start) {
-      stop("Error: BLAST trimming coordinates are invalid (vector_end < vector_start).")
+    # Ensure 'vector_start' and 'vector_end' are within valid bounds
+    if (vector_start < 1 || vector_start > seq_length) {
+      cat("Warning: 'vector_start' is out of bounds. Setting to 1.\n")
+      vector_start <- 1
+    }
+    if (vector_end < 1 || vector_end > seq_length) {
+      cat("Warning: 'vector_end' is out of bounds. Setting to sequence length.\n")
+      vector_end <- seq_length
     }
 
-    # Step 4: Trim Vector Portions
+    # Ensure 'vector_end' does not overlap 'vector_start'
+    if (vector_end < vector_start) {
+      stop("Error: BLAST trimming coordinates are invalid ('vector_end' < 'vector_start').")
+    }
+
+    # Step 5: Trim Vector Portions
     cat("Trimming vector portions...\n")
     trimmed_sequence <- subseq(raw_sequence, start = vector_end + 1, end = vector_start - 1)
     cat("Trimmed sequence:\n", as.character(trimmed_sequence), "\n")
@@ -71,7 +80,7 @@ if (file.exists("blast_results.txt") && file.info("blast_results.txt")$size > 0)
   writeXStringSet(DNAStringSet(raw_sequence), "final_trimmed_sequence.fasta")
 }
 
-# Step 5: Plot Chromatogram
+# Step 6: Plot Chromatogram
 cat("Plotting chromatogram...\n")
 chromatogram(sanger_seq)
 
