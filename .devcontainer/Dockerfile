@@ -1,14 +1,16 @@
-# Use a development-focused R image with common tools
-FROM rocker/dev:4.3.0
+# Use a comprehensive R development image
+FROM rocker/rstudio:4.3.0
 
-# Install additional dependencies
+# Install system dependencies, including BLAST and general utilities
 RUN apt-get update && apt-get install -y \
-    ncbi-blast+ \   # For BLAST tools
-    wget \           # For downloading files
+    ncbi-blast+ \
+    wget \
+    curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install R libraries using BiocManager
-RUN Rscript -e "install.packages('BiocManager'); BiocManager::install(c('sangerseqR', 'Biostrings'))"
+# Install required R packages via Bioconductor
+RUN Rscript -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager'); BiocManager::install(c('sangerseqR', 'Biostrings'))"
 
-# Set working directory inside the container
+# Set a working directory
 WORKDIR /workspace
